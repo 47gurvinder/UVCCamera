@@ -126,6 +126,8 @@ import io.flutter.view.TextureRegistry;
 
     private RtcEngine agoraEngine;
     boolean canPushFrame = false;
+    final UvcCameraStreamEventStreamHandler cameraStreamEventStreamHandler = new UvcCameraStreamEventStreamHandler();
+
 
 
     /**
@@ -496,17 +498,11 @@ import io.flutter.view.TextureRegistry;
             camera.setFrameCallback(new IFrameCallback() {
                 @Override
                 public void onFrame(ByteBuffer frame) {
-                    if (agoraEngine != null && canPushFrame) {
-//                        Log.e("MyAppAgora","here");
-//                        pushFrameToAgora(frame.array(), camera.getPreviewSize().width, camera.getPreviewSize().height);
+                    EventChannel.EventSink eventSink = cameraStreamEventStreamHandler.getEventSink();
+                    if (eventSink != null && canPushFrame) {
                         byte[] data = new byte[frame.remaining()];
                         frame.get(data);
-
-                        byte[] i420Data = convertYUV420SPToI420(data, camera.getPreviewSize().width, camera.getPreviewSize().height);
-
-
-                        pushFrameToAgora(i420Data, camera.getPreviewSize().width, camera.getPreviewSize().height);
-
+                        mainLooperHandler.post(() -> eventSink.success(data));
                     }
                 }
             }, UVCCamera.PIXEL_FORMAT_NV21);
@@ -516,6 +512,14 @@ import io.flutter.view.TextureRegistry;
             cameraSurfaceProducer.release();
             throw new IllegalStateException("Failed to start preview", e);
         }
+
+
+        //Create camera stream event channel
+        final var cameraStramEventChannel = new EventChannel(
+                binaryMessenger, "uvccamera/frame_stream"
+        );
+        cameraStramEventChannel.setStreamHandler(cameraStreamEventStreamHandler);
+        cameraStreamEventStreamHandler.getEventSink();
 
         // Create the error event channel
         final var errorEventChannel = new EventChannel(
@@ -1255,7 +1259,7 @@ import io.flutter.view.TextureRegistry;
 
             });
             agoraEngine.setExternalVideoSource(true, false, Constants.ExternalVideoSourceType.VIDEO_FRAME);
-                        agoraEngine.enableVideo();
+            agoraEngine.enableVideo();
 
             joinChannel(token, channel, uid);
             canPushFrame = true;

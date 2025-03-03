@@ -16,6 +16,7 @@ abstract class UvcCameraPlatformInterface extends PlatformInterface {
   static final Object _token = Object();
 
   static UvcCameraPlatformInterface _instance = UvcCameraPlatform();
+
   static UvcCameraPlatformInterface get instance => _instance;
 
   static set instance(UvcCameraPlatformInterface instance) {
@@ -51,6 +52,14 @@ abstract class UvcCameraPlatformInterface extends PlatformInterface {
     throw UnimplementedError('attachToCameraErrorCallback() has not been implemented.');
   }
 
+  Future<Stream<Uint8List>> attachToCameraStreamCallback() {
+    throw UnimplementedError('attachToCameraStreamCallback() has not been implemented.');
+  }
+
+  Future<void> detachToCameraStreamCallback() {
+    throw UnimplementedError('detachToCameraStreamCallback() has not been implemented.');
+  }
+  
   Future<void> detachFromCameraErrorCallback(int cameraId) {
     throw UnimplementedError('detachFromCameraErrorCallback() has not been implemented.');
   }
@@ -86,7 +95,7 @@ abstract class UvcCameraPlatformInterface extends PlatformInterface {
   Future<XFile> takePicture(int cameraId) {
     throw UnimplementedError('takePicture() has not been implemented.');
   }
-  
+
   Future<void> stopStream() {
     throw UnimplementedError('initializeAgora() has not been implemented.');
   }

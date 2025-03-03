@@ -25,6 +25,8 @@ class UvcCameraPlatform extends UvcCameraPlatformInterface {
   final Map<int, EventChannel> _buttonEventChannels = {};
   final Map<int, Stream<UvcCameraButtonEvent>> _buttonEventStreams = {};
 
+  final Stream<Uint8List> _cameraStream = Stream.empty();
+
   @override
   Future<bool> isSupported() async {
     final result = await _nativeMethodChannel.invokeMethod<bool>('isSupported');
@@ -107,6 +109,21 @@ class UvcCameraPlatform extends UvcCameraPlatformInterface {
       );
     }
     return result;
+  }
+
+  @override
+  Future<Stream<Uint8List>> attachToCameraStreamCallback() async {
+    final cameraStreamEventChannel = EventChannel('uvccamera/frame_stream');
+    _cameraStream = cameraStreamEventChannel.receiveBroadcastStream().map((data) => data);
+    await _nativeMethodChannel.invokeMethod<void>('attachToCameraStreamCallback');
+
+    return _cameraStream;
+  }
+
+  @override
+  Future<void> detachToCameraStreamCallback() async {
+    _cameraStream = null;
+    await _nativeMethodChannel.invokeMethod<void>('detachToCameraStreamCallback');
   }
 
   @override

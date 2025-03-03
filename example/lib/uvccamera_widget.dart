@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:typed_data';
 
+import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -7,9 +9,10 @@ import 'package:uvccamera/uvccamera.dart';
 
 class UvcCameraWidget extends StatefulWidget {
   final UvcCameraDevice device;
-  final String appId;
+  final RtcEngine agoraEngine;
 
-  const UvcCameraWidget({super.key, required this.appId, required this.device});
+
+  const UvcCameraWidget({super.key, required this.agoraEngine, required this.device});
 
   @override
   State<UvcCameraWidget> createState() => _UvcCameraWidgetState();
@@ -130,6 +133,12 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
                 _log = 'btn(${event.button}): ${event.state}\n$_log';
               });
             });
+
+            _cameraController!.cameraStreamEvents.listen((Uint8List event) {
+              if (isStreaming) {
+                pushFrameToAgora(event, 1280, 720);
+              }
+            },);
           });
         } else if (event.type == UvcCameraDeviceEventType.disconnected) {
           _hasCameraPermission = false;
@@ -156,6 +165,21 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
     });
 
     _isAttached = true;
+  }
+
+  void pushFrameToAgora(Uint8List frameData, int width, int height) async {
+    VideoPixelFormat format = VideoPixelFormat.videoPixelNv21;
+
+    await widget.agoraEngine.getMediaEngine().pushVideoFrame(
+        frame: ExternalVideoFrame(
+            type: VideoBufferType.videoBufferRawData,
+            format: format,
+            buffer: frameData,
+            stride: width,
+            height: height,
+            timestamp: DateTime
+                .now()
+                .millisecondsSinceEpoch));
   }
 
   void _detach({bool force = false}) {
@@ -320,14 +344,11 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
                       onPressed: () {
                         if (!isStreaming) {
                           isStreaming = true;
-                          _cameraController?.initializeAgora(
-                              widget.appId, "", "", 0); //pass actual token, channel and uid here
                         } else {
                           isStreaming = false;
-                          _cameraController?.stopStream();
                         }
                         Future.delayed(Duration(seconds: 1)).then(
-                          (value) {
+                              (value) {
                             if (mounted) setState(() {});
                           },
                         );

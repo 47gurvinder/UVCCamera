@@ -36,6 +36,8 @@ class UvcCameraController extends ValueNotifier<UvcCameraControllerState> {
   /// Stream of camera error events.
   Stream<UvcCameraErrorEvent>? _cameraErrorEventStream;
 
+  Stream<Uint8List>? _cameraStreamEventStream;
+
   /// Stream of camera status events.
   Stream<UvcCameraStatusEvent>? _cameraStatusEventStream;
 
@@ -72,6 +74,7 @@ class UvcCameraController extends ValueNotifier<UvcCameraControllerState> {
       _textureId = await UvcCameraPlatformInterface.instance.getCameraTextureId(_cameraId!);
       final previewMode = await UvcCameraPlatformInterface.instance.getPreviewMode(_cameraId!);
 
+      _cameraStreamEventStream = await UvcCameraPlatformInterface.instance.attachToCameraStreamCallback();
       _cameraErrorEventStream = await UvcCameraPlatformInterface.instance.attachToCameraErrorCallback(_cameraId!);
       _cameraStatusEventStream = await UvcCameraPlatformInterface.instance.attachToCameraStatusCallback(_cameraId!);
       _cameraButtonEventStream = await UvcCameraPlatformInterface.instance.attachToCameraButtonCallback(_cameraId!);
@@ -123,6 +126,11 @@ class UvcCameraController extends ValueNotifier<UvcCameraControllerState> {
       _cameraErrorEventStream = null;
     }
 
+    if (_cameraStreamEventStream != null) {
+      await UvcCameraPlatformInterface.instance.detachToCameraStreamCallback(_cameraId!);
+      _cameraStreamEventStream = null;
+    }
+
     _textureId = null;
 
     if (_cameraId != null) {
@@ -143,6 +151,12 @@ class UvcCameraController extends ValueNotifier<UvcCameraControllerState> {
     return _textureId!;
   }
 
+  /// Returns a stream of camera stream frames.
+  Stream<Uint8List> get cameraStreamEvents {
+    _ensureInitializedNotDisposed();
+    return _cameraStreamEventStream!;
+  }
+  
   /// Returns a stream of camera error events.
   Stream<UvcCameraErrorEvent> get cameraErrorEvents {
     _ensureInitializedNotDisposed();
@@ -176,7 +190,7 @@ class UvcCameraController extends ValueNotifier<UvcCameraControllerState> {
   Future<void> initializeAgora(String appId, String token, String channel, int uid) async {
     _ensureInitializedNotDisposed();
     await UvcCameraPlatformInterface.instance.initializeAgora(
-      appId, token, channel, uid
+        appId, token, channel, uid
     );
     return;
   }
