@@ -499,7 +499,7 @@ import io.flutter.view.TextureRegistry;
                 @Override
                 public void onFrame(ByteBuffer frame) {
                     EventChannel.EventSink eventSink = cameraStreamEventStreamHandler.getEventSink();
-                    if (eventSink != null && canPushFrame) {
+                    if (eventSink != null ) {
                         byte[] data = new byte[frame.remaining()];
                         frame.get(data);
                         mainLooperHandler.post(() -> eventSink.success(data));
@@ -519,7 +519,6 @@ import io.flutter.view.TextureRegistry;
                 binaryMessenger, "uvccamera/frame_stream"
         );
         cameraStramEventChannel.setStreamHandler(cameraStreamEventStreamHandler);
-        cameraStreamEventStreamHandler.getEventSink();
 
         // Create the error event channel
         final var errorEventChannel = new EventChannel(

@@ -192,6 +192,7 @@ import io.flutter.plugin.common.MethodChannel;
                 long textureId;
                 try {
                     textureId = uvcCameraPlatform.getCameraTextureId(cameraId);
+                    Log.v("getCameraTextureId : ", "here textureId: "+textureId);
                 } catch (final Exception e) {
                     result.error(e.getClass().getSimpleName(), e.getMessage(), null);
                     return;

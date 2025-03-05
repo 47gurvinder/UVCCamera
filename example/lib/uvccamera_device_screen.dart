@@ -20,16 +20,10 @@ class _UvcCameraDeviceScreenState extends State<UvcCameraDeviceScreen> {
   UvcCameraDevice get device => widget.device;
 
   String get appId => widget.appId;
-  AgoraService agoraService = AgoraService();
 
   @override
   void initState() {
-    agoraService.initializeAgora(
-      appId: appId,
-      token: agoraToken,
-      channelName: "main-channel",
-      uid: 0,
-    );
+
     super.initState();
   }
 
@@ -41,19 +35,8 @@ class _UvcCameraDeviceScreenState extends State<UvcCameraDeviceScreen> {
       ),
       body: ListView(
         children: [
-          UvcCameraWidget(device: device, agoraEngine: agoraService.engine),
-          SizedBox(
-            height: 200,
-            child: AgoraVideoView(
-              controller: VideoViewController(
-                rtcEngine: agoraService.engine,
-                canvas: const VideoCanvas(
-                  uid: 0,
-                  sourceType: VideoSourceType.videoSourceCustom,
-                ),
-              ),
-            ),
-          ),
+          UvcCameraWidget(device: device),
+
           /*SizedBox(
             height: 200,
             child: AgoraVideoView(

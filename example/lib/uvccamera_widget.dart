@@ -4,14 +4,15 @@ import 'dart:typed_data';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:uvccamera/uvccamera.dart';
+import 'package:uvccamera_example/main.dart';
 
 class UvcCameraWidget extends StatefulWidget {
   final UvcCameraDevice device;
-  final RtcEngine agoraEngine;
 
-  const UvcCameraWidget({super.key, required this.agoraEngine, required this.device});
+  const UvcCameraWidget({super.key, required this.device});
 
   @override
   State<UvcCameraWidget> createState() => _UvcCameraWidgetState();
@@ -32,12 +33,16 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
   String _log = '';
 
   bool isStreaming = false;
+  late final RtcEngine _engine;
+  bool isJoined = false;
+  int? remoteUid;
 
   @override
   void initState() {
     super.initState();
 
     WidgetsBinding.instance.addObserver(this);
+    _initializeAgora();
 
     _attach();
   }
@@ -135,8 +140,10 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
 
             _cameraController!.cameraStreamEvents.listen(
               (Uint8List event) {
+             //   print("cameraStreamEvents: $event");
+
                 if (isStreaming) {
-                  pushFrameToAgora(event, 1280, 720);
+                 // pushFrameToAgora(event, 1280, 720);
                 }
               },
             );
@@ -170,17 +177,15 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
 
   void pushFrameToAgora(Uint8List frameData, int width, int height) async {
     VideoPixelFormat format = VideoPixelFormat.videoPixelNv21;
-
-    await widget.agoraEngine.getMediaEngine().pushVideoFrame(
+    print("pushFrameToAgora: here");
+    await _engine.getMediaEngine().pushVideoFrame(
         frame: ExternalVideoFrame(
             type: VideoBufferType.videoBufferRawData,
             format: format,
             buffer: frameData,
             stride: width,
             height: height,
-            timestamp: DateTime
-                .now()
-                .millisecondsSinceEpoch));
+            timestamp: DateTime.now().millisecondsSinceEpoch));
   }
 
   void _detach({bool force = false}) {
@@ -316,7 +321,7 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
       future: _cameraControllerInitializeFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done) {
-          return Stack(
+          return Column(
             children: [
               Align(
                 alignment: Alignment.topCenter,
@@ -324,22 +329,46 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
                   _cameraController!,
                 ),
               ),
+              if (isJoined)
+                SizedBox(
+                  height: 200,
+                  child: AgoraVideoView(
+                    controller: VideoViewController(
+                      rtcEngine: _engine,
+                      canvas: const VideoCanvas(uid: 0),
+                    ),
+                  ),
+                ),
+              if (remoteUid != null)
+                Align(
+                  alignment: Alignment.topRight,
+                  child: Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.red, width: 2),
+                    ),
+                    child: AgoraVideoView(
+                      controller: VideoViewController.remote(
+                        rtcEngine: _engine,
+                        canvas: VideoCanvas(uid: remoteUid!),
+                        connection: const RtcConnection(channelId: "main-channel"),
+                      ),
+                    ),
+                  ),
+                ),
               Padding(
                 padding: const EdgeInsets.only(bottom: 80),
                 child: Align(
                   alignment: Alignment.bottomCenter,
                   child: ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
                         if (!isStreaming) {
-                          isStreaming = true;
-                        } else {
-                          isStreaming = false;
+                          if (_cameraController != null) {
+                            await _joinChannel();
+                            _startStreaming();
+                          }
                         }
-                        Future.delayed(Duration(seconds: 1)).then(
-                          (value) {
-                            if (mounted) setState(() {});
-                          },
-                        );
                       },
                       child: Text(isStreaming ? "Stop Stream" : "Start stream on Agora")),
                 ),
@@ -351,5 +380,96 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
         }
       },
     );
+  }
+
+  Future<void> _initializeAgora() async {
+    _engine = createAgoraRtcEngine();
+    await _engine.initialize(RtcEngineContext(appId: appId));
+
+    _engine.registerEventHandler(
+      RtcEngineEventHandler(
+        onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
+          setState(() {
+            isJoined = true;
+          });
+          print("Local user joined: ${connection.localUid}");
+        },
+        onUserJoined: (RtcConnection connection, int uid, int elapsed) {
+          setState(() {
+            remoteUid = uid;
+          });
+          print("Remote user joined: $uid");
+        },
+        onUserOffline: (RtcConnection connection, int uid, UserOfflineReasonType reason) {
+          setState(() {
+            remoteUid = null;
+          });
+          print("Remote user left: $uid");
+        },
+      ),
+    );
+
+    await _engine.getMediaEngine().setExternalVideoSource(enabled: true, useTexture: true);
+
+    await _engine.enableVideo();
+  }
+
+  Future<void> _joinChannel() async {
+    await _engine.joinChannel(
+      token:
+          "007eJxTYEistP/6cllgqpqhrU/v731fDU7wFCo95X3w+tXcJQfn6M5VYDA0sTRNNE02N000MDJJMzBNTEs1sjRMTDRIMk1NNU2zmB54Ir0hkJHh4/yjzIwMEAji8zDkJmbm6SZnJOblpeYwMAAA85clCw==",
+      channelId: "main-channel",
+      uid: 0,
+      options: const ChannelMediaOptions(
+        channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
+        clientRoleType: ClientRoleType.clientRoleBroadcaster,
+      ),
+    );
+  }
+
+  Future<void> _leaveChannel() async {
+    await _engine.leaveChannel();
+    setState(() {
+      isJoined = false;
+      remoteUid = null;
+    });
+  }
+
+  Future<void> _startStreaming() async {
+    // print("_startStreaming textureId: $textureId");
+    setState(() {
+      isStreaming = true;
+    });
+
+    if (_cameraController == null || _cameraController!.textureId == null) {
+      print("Error: Texture ID is null");
+      return;
+    }
+
+    print("USB Camera textureId: ${_cameraController!.textureId}");
+
+
+
+    await _engine.getMediaEngine().pushVideoFrame(
+          frame: ExternalVideoFrame(
+            type: VideoBufferType.videoBufferTexture,
+            format: VideoPixelFormat.videoPixelNv21,
+            textureId: _cameraController!.textureId,
+            timestamp: DateTime.now().millisecondsSinceEpoch,
+            stride: 1280,
+            height: 720,
+
+          ),
+        );
+
+    print("Started streaming video from texture ID");
+
+
+    /*final cameraStreamEventChannel = EventChannel('uvccamera/frame_stream');
+     cameraStreamEventChannel.receiveBroadcastStream().listen((event) {
+       print("cameraStreamEventChannel");
+     },);
+*/
+
   }
 }
