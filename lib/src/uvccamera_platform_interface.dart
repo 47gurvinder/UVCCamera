@@ -9,6 +9,7 @@ import 'uvccamera_platform.dart';
 import 'uvccamera_mode.dart';
 import 'uvccamera_resolution_preset.dart';
 import 'uvccamera_status_event.dart';
+import 'dart:typed_data';
 
 abstract class UvcCameraPlatformInterface extends PlatformInterface {
   UvcCameraPlatformInterface() : super(token: _token);
@@ -59,7 +60,7 @@ abstract class UvcCameraPlatformInterface extends PlatformInterface {
   Future<void> detachToCameraStreamCallback() {
     throw UnimplementedError('detachToCameraStreamCallback() has not been implemented.');
   }
-  
+
   Future<void> detachFromCameraErrorCallback(int cameraId) {
     throw UnimplementedError('detachFromCameraErrorCallback() has not been implemented.');
   }

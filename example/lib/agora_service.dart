@@ -11,16 +11,24 @@ class AgoraService {
     required int uid,
   }) async {
     engine = createAgoraRtcEngine();
-    await engine.initialize(RtcEngineContext(appId: appId));
+    await engine?.initialize(RtcEngineContext(appId: appId));
 
-    await engine.enableVideo();
-    await engine.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
 
-    await engine.joinChannel(
+    await engine
+        .getMediaEngine()
+        .setExternalVideoSource(enabled: true, useTexture: false);
+    await engine?.enableVideo();
+    await engine.startPreview(sourceType: VideoSourceType.videoSourceCustom);
+
+
+    await engine?.joinChannel(
       token: token,
       channelId: channelName,
       uid: uid,
-      options: ChannelMediaOptions(),
+      options: ChannelMediaOptions(
+        channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
+        clientRoleType: ClientRoleType.clientRoleBroadcaster,
+      ),
     );
 
     isInitialized = true;

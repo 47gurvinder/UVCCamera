@@ -11,7 +11,6 @@ class UvcCameraWidget extends StatefulWidget {
   final UvcCameraDevice device;
   final RtcEngine agoraEngine;
 
-
   const UvcCameraWidget({super.key, required this.agoraEngine, required this.device});
 
   @override
@@ -134,11 +133,13 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
               });
             });
 
-            _cameraController!.cameraStreamEvents.listen((Uint8List event) {
-              if (isStreaming) {
-                pushFrameToAgora(event, 1280, 720);
-              }
-            },);
+            _cameraController!.cameraStreamEvents.listen(
+              (Uint8List event) {
+                if (isStreaming) {
+                  pushFrameToAgora(event, 1280, 720);
+                }
+              },
+            );
           });
         } else if (event.type == UvcCameraDeviceEventType.disconnected) {
           _hasCameraPermission = false;
@@ -321,19 +322,6 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
                 alignment: Alignment.topCenter,
                 child: UvcCameraPreview(
                   _cameraController!,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: SingleChildScrollView(
-                      child: SelectableText(
-                        _log,
-                        style: TextStyle(
-                          color: Colors.red,
-                          fontFamily: 'Courier',
-                          fontSize: 10.0,
-                        ),
-                      ),
-                    ),
-                  ),
                 ),
               ),
               Padding(
@@ -348,7 +336,7 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
                           isStreaming = false;
                         }
                         Future.delayed(Duration(seconds: 1)).then(
-                              (value) {
+                          (value) {
                             if (mounted) setState(() {});
                           },
                         );

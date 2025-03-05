@@ -15,6 +15,7 @@ import 'uvccamera_mode.dart';
 import 'uvccamera_platform_interface.dart';
 import 'uvccamera_resolution_preset.dart';
 import 'uvccamera_status_event.dart';
+import 'dart:typed_data';
 
 /// A controller for a connected [UvcCameraDevice].
 class UvcCameraController extends ValueNotifier<UvcCameraControllerState> {
@@ -127,7 +128,7 @@ class UvcCameraController extends ValueNotifier<UvcCameraControllerState> {
     }
 
     if (_cameraStreamEventStream != null) {
-      await UvcCameraPlatformInterface.instance.detachToCameraStreamCallback(_cameraId!);
+      await UvcCameraPlatformInterface.instance.detachToCameraStreamCallback();
       _cameraStreamEventStream = null;
     }
 
@@ -156,7 +157,7 @@ class UvcCameraController extends ValueNotifier<UvcCameraControllerState> {
     _ensureInitializedNotDisposed();
     return _cameraStreamEventStream!;
   }
-  
+
   /// Returns a stream of camera error events.
   Stream<UvcCameraErrorEvent> get cameraErrorEvents {
     _ensureInitializedNotDisposed();

@@ -42,12 +42,31 @@ class _UvcCameraDeviceScreenState extends State<UvcCameraDeviceScreen> {
       body: ListView(
         children: [
           UvcCameraWidget(device: device, agoraEngine: agoraService.engine),
-          AgoraVideoView(
-            controller: VideoViewController.remote(
-                rtcEngine: agoraService.engine, canvas: VideoCanvas(uid: 12), connection: RtcConnection()),
+          SizedBox(
+            height: 200,
+            child: AgoraVideoView(
+              controller: VideoViewController(
+                rtcEngine: agoraService.engine,
+                canvas: const VideoCanvas(
+                  uid: 0,
+                  sourceType: VideoSourceType.videoSourceCustom,
+                ),
+              ),
+            ),
           ),
+          /*SizedBox(
+            height: 200,
+            child: AgoraVideoView(
+              controller: VideoViewController.remote(
+                  rtcEngine: agoraService!.engine,
+                  canvas: VideoCanvas(uid: 121),
+                  connection: RtcConnection(channelId: "main-channel")),
+            ),
+          ),*/
         ],
       ),
     );
   }
+
+
 }
