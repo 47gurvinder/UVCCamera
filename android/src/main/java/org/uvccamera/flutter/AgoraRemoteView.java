@@ -13,6 +13,8 @@ import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import java.util.Map;
+
 import io.agora.rtc2.RtcEngine;
 import io.agora.rtc2.video.VideoCanvas;
 import io.flutter.plugin.platform.PlatformView;
@@ -24,32 +26,20 @@ public class AgoraRemoteView implements PlatformView {
     public AgoraRemoteView(Context context, int viewId, Object args) {
         frameLayout = new FrameLayout(context);
         textureView = new TextureView(context);
-        textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
-            @Override
-            public void onSurfaceTextureAvailable(android.graphics.SurfaceTexture surface, int width, int height) {
-                Log.e("MyAppAgora", "TextureView Available: " + width + "x" + height);
-            }
-
-            @Override
-            public void onSurfaceTextureSizeChanged(android.graphics.SurfaceTexture surface, int width, int height) {
-            }
-
-            @Override
-            public boolean onSurfaceTextureDestroyed(android.graphics.SurfaceTexture surface) {
-                return false;
-            }
-
-            @Override
-            public void onSurfaceTextureUpdated(android.graphics.SurfaceTexture surface) {
-            }
-        });
-
         frameLayout.addView(textureView);
+        if (args instanceof Map) {
+            Map<String, Object> creationParams = (Map<String, Object>) args;
+            if (creationParams.containsKey("uid")) {
+                int uid = (int) creationParams.get("uid");
+                setupAgora(uid);
+            }
+        }
     }
 
     public void setupAgora(int id) {
-        // Set up remote video renderer
-        Log.e("MyAppAgora", "setupAgora uid: " + id);
+
+        Log.e("MyAppAgora", "Setting up Agora Remote View for uid: " + id);
+
         new Handler(Looper.getMainLooper()).post(() -> {
             RtcEngine rtcEngine = AgoraManager.getInstance().getRtcEngine();
 
@@ -58,7 +48,7 @@ public class AgoraRemoteView implements PlatformView {
                 return;
             }
 
-            rtcEngine.muteRemoteVideoStream(id, false); // Unmute the video stream
+            rtcEngine.muteRemoteVideoStream(id, false);
             rtcEngine.setupRemoteVideo(new VideoCanvas(
                     textureView,
                     VideoCanvas.RENDER_MODE_HIDDEN,
@@ -66,8 +56,6 @@ public class AgoraRemoteView implements PlatformView {
             ));
 
             Log.e("MyAppAgora", "Remote video setup completed for uid: " + id);
-
-
         });
     }
 

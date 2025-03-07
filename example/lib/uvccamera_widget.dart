@@ -32,12 +32,12 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
   StreamSubscription<UvcCameraStatusEvent>? _statusEventSubscription;
   StreamSubscription<UvcCameraButtonEvent>? _buttonEventSubscription;
   StreamSubscription<UvcCameraDeviceEvent>? _deviceEventSubscription;
+  StreamSubscription<UvcAgoraEvent>? _agoraEventSubscription;
   String _log = '';
 
   bool isStreaming = false;
 
-  final int remoteUid = 121;
-  bool isRemoteJoined = false;
+  int? _remoteUid;
 
   @override
   void initState() {
@@ -165,6 +165,21 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
       });
     });
 
+    _agoraEventSubscription = UvcCamera.agoraEventStream.listen(
+      (event) {
+        print("agoraEventStream: $event");
+
+        if (event.event == "onUserJoined") {
+          setState(() {
+            _remoteUid = event.uid;
+          });
+        } else if (event.event == "onUserOffline") {
+          setState(() {
+            _remoteUid = null; // Remove the remote video view
+          });
+        }
+      },
+    );
     _isAttached = true;
   }
 
@@ -190,6 +205,9 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
 
     _deviceEventSubscription?.cancel();
     _deviceEventSubscription = null;
+
+    _agoraEventSubscription?.cancel();
+    _agoraEventSubscription = null;
 
     _isAttached = false;
   }
@@ -301,7 +319,7 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
       future: _cameraControllerInitializeFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done) {
-          return ListView(
+          return Stack(
             children: [
               Align(
                 alignment: Alignment.topCenter,
@@ -322,13 +340,16 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
                   ),
                 ),
               ),
-              Container(
+              Align(
+                alignment: Alignment.bottomRight,
+                child: Container(
+                  width: 160,
                   height: 200,
                   margin: EdgeInsets.all(10),
-                  color: Colors.black,
-                  child:
-                      _buildAgoraRemoteView()
-                  ),
+                  decoration: BoxDecoration(border: Border.all(color: Colors.black54, width: 1)),
+                  child: _remoteUid != null ? _buildAgoraRemoteView(_remoteUid!) : _buildWaitingScreen(),
+                ),
+              ),
               /*SizedBox(
                 height: 200,
                 child: AgoraVideoView(
@@ -357,7 +378,7 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
               Padding(
                 padding: const EdgeInsets.only(bottom: 80),
                 child: Align(
-                  alignment: Alignment.bottomCenter,
+                  alignment: Alignment.bottomLeft,
                   child: ElevatedButton(
                       onPressed: () {
                         if (!isStreaming) {
@@ -389,14 +410,22 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
     );
   }
 
-  Widget _buildAgoraRemoteView() {
+  Widget _buildWaitingScreen() {
+    return Center(
+      child: Text(
+        "Waiting for remote user...",
+        textAlign: TextAlign.center,
+        style: TextStyle(color: Colors.black),
+      ),
+    );
+  }
+
+  Widget _buildAgoraRemoteView(int uid) {
     // This is used in the platform side to register the view
     const String viewType = 'agora_remote_view';
 
     // Pass parameters to the platform side
-    final Map<String, dynamic> creationParams = <String, dynamic>{
-
-    };
+    final Map<String, dynamic> creationParams = <String, dynamic>{"uid": uid};
 
     // Use PlatformViewLink for Hybrid Composition (preferred on Android)
     return PlatformViewLink(

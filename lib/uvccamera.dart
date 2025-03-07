@@ -9,6 +9,7 @@ export 'src/uvccamera_controller_initialized_exception.dart' show UvcCameraContr
 export 'src/uvccamera_controller_not_initialized_exception.dart' show UvcCameraControllerNotInitializedException;
 export 'src/uvccamera_controller_state.dart' show UvcCameraControllerState;
 export 'src/uvccamera_device.dart' show UvcCameraDevice;
+export 'src/uvc_agora_event.dart' show UvcAgoraEvent;
 export 'src/uvccamera_device_event.dart' show UvcCameraDeviceEvent;
 export 'src/uvccamera_device_event_type.dart' show UvcCameraDeviceEventType;
 export 'src/uvccamera_error.dart' show UvcCameraError;

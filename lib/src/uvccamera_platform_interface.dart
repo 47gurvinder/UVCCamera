@@ -4,6 +4,7 @@ import 'package:cross_file/cross_file.dart';
 import 'uvccamera_button_event.dart';
 import 'uvccamera_device.dart';
 import 'uvccamera_device_event.dart';
+import 'uvc_agora_event.dart';
 import 'uvccamera_error_event.dart';
 import 'uvccamera_platform.dart';
 import 'uvccamera_mode.dart';
@@ -104,6 +105,10 @@ abstract class UvcCameraPlatformInterface extends PlatformInterface {
   }
 
   Stream<UvcCameraDeviceEvent> get deviceEventStream {
+    throw UnimplementedError('deviceEventStream has not been implemented.');
+  }
+  
+  Stream<UvcAgoraEvent> get agoraEventStream {
     throw UnimplementedError('deviceEventStream has not been implemented.');
   }
 }

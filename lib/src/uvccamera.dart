@@ -1,5 +1,6 @@
 import 'uvccamera_device.dart';
 import 'uvccamera_device_event.dart';
+import 'uvc_agora_event.dart';
 import 'uvccamera_platform_interface.dart';
 
 /// UVC Camera plugin
@@ -22,5 +23,10 @@ class UvcCamera {
   /// Device event stream.
   static Stream<UvcCameraDeviceEvent> get deviceEventStream {
     return UvcCameraPlatformInterface.instance.deviceEventStream;
+  }
+  
+  /// Agora event stream.
+  static Stream<UvcAgoraEvent> get agoraEventStream {
+    return UvcCameraPlatformInterface.instance.agoraEventStream;
   }
 }

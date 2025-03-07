@@ -26,6 +26,7 @@ import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -94,6 +95,11 @@ import io.flutter.view.TextureRegistry;
     private final UvcCameraDeviceEventStreamHandler deviceEventStreamHandler;
 
     /**
+     * "uvccamera/agora_events" event stream handler
+     */
+    private final UvcAgoraEventStreamHandler agoraEventStreamHandler;
+
+    /**
      * USB monitor
      */
     private final USBMonitor usbMonitor;
@@ -136,12 +142,14 @@ import io.flutter.view.TextureRegistry;
             final @NonNull BinaryMessenger binaryMessenger,
             final @NonNull TextureRegistry textureRegistry,
             final @NonNull UvcCameraDeviceEventStreamHandler deviceEventStreamHandler,
+            final @NonNull UvcAgoraEventStreamHandler agoraEventStreamHandler,
             final OnSetupAgora onSetupAgora
     ) {
         this.applicationContext = new WeakReference<>(applicationContext);
         this.binaryMessenger = new WeakReference<>(binaryMessenger);
         this.textureRegistry = textureRegistry;
         this.deviceEventStreamHandler = deviceEventStreamHandler;
+        this.agoraEventStreamHandler = agoraEventStreamHandler;
         this.onSetupAgora = onSetupAgora;
 
         usbMonitor = new USBMonitor(applicationContext, new UvcCameraDeviceMonitorListener(this));
@@ -1234,18 +1242,25 @@ import io.flutter.view.TextureRegistry;
                 public void onUserJoined(int uid, int elapsed) {
                     super.onUserJoined(uid, elapsed);
                     Log.e("MyAppAgora", "Agora onUserJoined: " + uid);
-                   /* new Handler(Looper.getMainLooper()).post(() -> {
-                        boolean isRemoteVideoEnabled = AgoraManager.getInstance().getRtcEngine().isTextureEncodeSupported();
-                        Log.e("MyAppAgora", "Remote user video status: " + isRemoteVideoEnabled);
+                    Map<String, Object> event = new HashMap<>();
+                    event.put("event", "onUserJoined");
+                    event.put("uid", uid);
 
-                        if (isRemoteVideoEnabled) {
-                            onSetupAgora.setupRemoteView(uid);
-                        } else {
-                            Log.e("MyAppAgora", "Remote user is NOT sending video.");
-                        }
-                    });*/
+                    postAgoraEvent(event);
+                }
 
+                @Override
+                public void onUserOffline(int uid, int reason) {
+                    super.onUserOffline(uid, reason);
+                    Log.e("MyAppAgora", "Agora onUserOffline: " + uid);
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("reason", reason);
 
+                    Map<String, Object> event = new HashMap<>();
+                    event.put("event", "onUserOffline");
+                    event.put("uid", uid);
+                    event.put("data", data);
+                    postAgoraEvent(event);
                 }
 
                 @Override
@@ -1288,6 +1303,17 @@ import io.flutter.view.TextureRegistry;
         agoraEngine.joinChannel(token, channelName, uid, options);
     }
 
+
+    private void postAgoraEvent(Object event) {
+        final var eventSink = agoraEventStreamHandler.getEventSink();
+        if (eventSink == null) {
+            Log.w(TAG, "postAgoraEvent: event sink not found");
+            return;
+        }
+        mainLooperHandler.post(
+                () -> eventSink.success(event)
+        );
+    }
    /* private void setupRemoteVideo(int uid) {
         FrameLayout container = findViewById(R.id.remote_video_view_container);
         SurfaceView surfaceView = new SurfaceView(getBaseContext());

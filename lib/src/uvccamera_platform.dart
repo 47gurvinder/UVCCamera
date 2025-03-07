@@ -4,6 +4,7 @@ import 'package:cross_file/cross_file.dart';
 import 'uvccamera_button_event.dart';
 import 'uvccamera_device.dart';
 import 'uvccamera_device_event.dart';
+import 'uvc_agora_event.dart';
 import 'uvccamera_error_event.dart';
 import 'uvccamera_mode.dart';
 import 'uvccamera_platform_interface.dart';
@@ -14,7 +15,9 @@ class UvcCameraPlatform extends UvcCameraPlatformInterface {
   final _nativeMethodChannel = const MethodChannel('uvccamera/native');
 
   final EventChannel _deviceEventChannel = EventChannel('uvccamera/device_events');
+  final EventChannel _agoraEventChannel = EventChannel('uvccamera/agora_events');
   Stream<UvcCameraDeviceEvent>? _deviceEventStream;
+  Stream<UvcAgoraEvent>? _agoraEventStream;
 
   final Map<int, EventChannel> _errorEventChannels = {};
   final Map<int, Stream<UvcCameraErrorEvent>> _errorEventStreams = {};
@@ -289,6 +292,13 @@ class UvcCameraPlatform extends UvcCameraPlatformInterface {
   Stream<UvcCameraDeviceEvent> get deviceEventStream {
     return _deviceEventStream ??= _deviceEventChannel.receiveBroadcastStream().map((event) {
       return UvcCameraDeviceEvent.fromMap(event);
+    });
+  }
+  
+  @override
+  Stream<UvcAgoraEvent> get agoraEventStream {
+    return _agoraEventStream ??= _agoraEventChannel.receiveBroadcastStream().map((event) {
+      return UvcAgoraEvent.fromMap(event);
     });
   }
 }

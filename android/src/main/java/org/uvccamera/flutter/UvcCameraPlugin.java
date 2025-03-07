@@ -31,6 +31,11 @@ public class UvcCameraPlugin implements FlutterPlugin, ActivityAware {
     private EventChannel deviceEventChannel;
 
     /**
+     * "uvccamera/agora_events" event channel
+     */
+    private EventChannel agoraEventChannel;
+
+    /**
      * {@link UvcCameraPlatform} instance.
      */
     private UvcCameraPlatform uvcCameraPlatform;
@@ -47,14 +52,16 @@ public class UvcCameraPlugin implements FlutterPlugin, ActivityAware {
 
         nativeMethodChannel = new MethodChannel(binaryMessenger, "uvccamera/native");
         deviceEventChannel = new EventChannel(binaryMessenger, "uvccamera/device_events");
+        agoraEventChannel = new EventChannel(binaryMessenger, "uvccamera/agora_events");
 
         final var deviceEventChannelStreamHandler = new UvcCameraDeviceEventStreamHandler();
+        final var agoraEventStreamHandler = new UvcAgoraEventStreamHandler();
 
         uvcCameraPlatform = new UvcCameraPlatform(
                 applicationContext,
                 binaryMessenger,
                 textureRegistry,
-                deviceEventChannelStreamHandler, new OnSetupAgora() {
+                deviceEventChannelStreamHandler,agoraEventStreamHandler, new OnSetupAgora() {
             @Override
             public void setupRemoteView(int id) {
                 agoraRemoteViewFactory.setupAgora( id);
@@ -63,6 +70,7 @@ public class UvcCameraPlugin implements FlutterPlugin, ActivityAware {
 
         nativeMethodChannel.setMethodCallHandler(new UvcCameraNativeMethodCallHandler(uvcCameraPlatform));
         deviceEventChannel.setStreamHandler(deviceEventChannelStreamHandler);
+        agoraEventChannel.setStreamHandler(agoraEventStreamHandler);
 
         agoraRemoteViewFactory = new AgoraRemoteViewFactory(flutterPluginBinding.getBinaryMessenger());
         flutterPluginBinding.getPlatformViewRegistry().registerViewFactory("agora_remote_view", agoraRemoteViewFactory);
@@ -101,6 +109,11 @@ public class UvcCameraPlugin implements FlutterPlugin, ActivityAware {
         if (deviceEventChannel != null) {
             deviceEventChannel.setStreamHandler(null);
             deviceEventChannel = null;
+        }
+
+        if (agoraEventChannel != null) {
+            agoraEventChannel.setStreamHandler(null);
+            agoraEventChannel = null;
         }
 
         if (nativeMethodChannel != null) {
