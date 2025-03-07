@@ -35,6 +35,8 @@ public class UvcCameraPlugin implements FlutterPlugin, ActivityAware {
      */
     private UvcCameraPlatform uvcCameraPlatform;
 
+    private AgoraRemoteViewFactory agoraRemoteViewFactory;
+
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
         Log.v(TAG, "onAttachedToEngine");
@@ -52,11 +54,19 @@ public class UvcCameraPlugin implements FlutterPlugin, ActivityAware {
                 applicationContext,
                 binaryMessenger,
                 textureRegistry,
-                deviceEventChannelStreamHandler
-        );
+                deviceEventChannelStreamHandler, new OnSetupAgora() {
+            @Override
+            public void setupRemoteView(int id) {
+                agoraRemoteViewFactory.setupAgora( id);
+            }
+        });
 
         nativeMethodChannel.setMethodCallHandler(new UvcCameraNativeMethodCallHandler(uvcCameraPlatform));
         deviceEventChannel.setStreamHandler(deviceEventChannelStreamHandler);
+
+        agoraRemoteViewFactory = new AgoraRemoteViewFactory(flutterPluginBinding.getBinaryMessenger());
+        flutterPluginBinding.getPlatformViewRegistry().registerViewFactory("agora_remote_view", agoraRemoteViewFactory);
+
     }
 
     @Override
@@ -100,3 +110,4 @@ public class UvcCameraPlugin implements FlutterPlugin, ActivityAware {
     }
 
 }
+

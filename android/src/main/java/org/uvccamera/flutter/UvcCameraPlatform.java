@@ -11,8 +11,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.util.Pair;
-import android.view.SurfaceView;
-import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 
@@ -32,14 +30,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import io.agora.meta.IMetaServiceEventHandler;
 import io.agora.rtc2.ChannelMediaOptions;
 import io.agora.rtc2.Constants;
 import io.agora.rtc2.IRtcEngineEventHandler;
 import io.agora.rtc2.RtcEngine;
-import io.agora.rtc2.RtcEngineConfig;
 import io.agora.rtc2.video.AgoraVideoFrame;
-import io.agora.rtc2.video.VideoCanvas;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.EventChannel;
 import io.flutter.view.TextureRegistry;
@@ -124,6 +119,7 @@ import io.flutter.view.TextureRegistry;
      */
     private final Map<Integer, UvcCameraResources> camerasResources = new ConcurrentHashMap<>();
 
+    private final OnSetupAgora onSetupAgora;
     private RtcEngine agoraEngine;
     boolean canPushFrame = false;
 
@@ -139,15 +135,18 @@ import io.flutter.view.TextureRegistry;
             final @NonNull Context applicationContext,
             final @NonNull BinaryMessenger binaryMessenger,
             final @NonNull TextureRegistry textureRegistry,
-            final @NonNull UvcCameraDeviceEventStreamHandler deviceEventStreamHandler
+            final @NonNull UvcCameraDeviceEventStreamHandler deviceEventStreamHandler,
+            final OnSetupAgora onSetupAgora
     ) {
         this.applicationContext = new WeakReference<>(applicationContext);
         this.binaryMessenger = new WeakReference<>(binaryMessenger);
         this.textureRegistry = textureRegistry;
         this.deviceEventStreamHandler = deviceEventStreamHandler;
+        this.onSetupAgora = onSetupAgora;
 
         usbMonitor = new USBMonitor(applicationContext, new UvcCameraDeviceMonitorListener(this));
         usbMonitor.register();
+
     }
 
     /**
@@ -497,14 +496,11 @@ import io.flutter.view.TextureRegistry;
                 @Override
                 public void onFrame(ByteBuffer frame) {
                     if (agoraEngine != null && canPushFrame) {
-//                        Log.e("MyAppAgora","here");
+                        Log.e("MyAppAgora","here");
 //                        pushFrameToAgora(frame.array(), camera.getPreviewSize().width, camera.getPreviewSize().height);
                         byte[] data = new byte[frame.remaining()];
                         frame.get(data);
-
                         byte[] i420Data = convertYUV420SPToI420(data, camera.getPreviewSize().width, camera.getPreviewSize().height);
-
-
                         pushFrameToAgora(i420Data, camera.getPreviewSize().width, camera.getPreviewSize().height);
 
                     }
@@ -1223,8 +1219,8 @@ import io.flutter.view.TextureRegistry;
         }
 
         try {
+            AgoraManager manager = AgoraManager.getInstance(applicationContext, appId, new IRtcEngineEventHandler() {
 
-            agoraEngine = RtcEngine.create(applicationContext, appId, new IRtcEngineEventHandler() {
 
                 @Override
                 public void onConnectionStateChanged(int state, int reason) {
@@ -1238,6 +1234,8 @@ import io.flutter.view.TextureRegistry;
                 public void onUserJoined(int uid, int elapsed) {
                     super.onUserJoined(uid, elapsed);
                     Log.e("MyAppAgora", "Agora onUserJoined: " + uid);
+                    onSetupAgora.setupRemoteView(uid);
+
                 }
 
                 @Override
@@ -1252,17 +1250,18 @@ import io.flutter.view.TextureRegistry;
                     super.onError(err);
                 }
 
-
             });
+            agoraEngine = manager.getRtcEngine();
             agoraEngine.setExternalVideoSource(true, false, Constants.ExternalVideoSourceType.VIDEO_FRAME);
-                        agoraEngine.enableVideo();
-
+//            agoraEngine.enableVideo();
+//            agoraEngine.enableAudio();
             joinChannel(token, channel, uid);
             canPushFrame = true;
         } catch (Exception e) {
             Log.e("MyAppAgora", "Agora initialization failed: " + e.getMessage());
         }
     }
+
 
     private void joinChannel(String token, String channelName, int uid) {
         // Create an instance of ChannelMediaOptions and configure it
@@ -1276,7 +1275,7 @@ import io.flutter.view.TextureRegistry;
         // Publish local media
         options.publishCameraTrack = true;
         options.publishMicrophoneTrack = true;
-        agoraEngine.joinChannel("", channelName, uid, options);
+        agoraEngine.joinChannel(token, channelName, uid, options);
     }
 
    /* private void setupRemoteVideo(int uid) {

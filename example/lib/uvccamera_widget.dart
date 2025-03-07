@@ -4,6 +4,7 @@ import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:uvccamera/uvccamera.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 class UvcCameraWidget extends StatefulWidget {
   final UvcCameraDevice device;
@@ -31,13 +32,17 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
 
   bool isStreaming = false;
 
+  final int remoteUid = 121;
+  bool isRemoteJoined = false;
+
   @override
   void initState() {
     super.initState();
 
     WidgetsBinding.instance.addObserver(this);
-
     _attach();
+
+    WakelockPlus.enable();
   }
 
   @override
@@ -45,6 +50,7 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
     WidgetsBinding.instance.removeObserver(this);
 
     _detach(force: true);
+    WakelockPlus.disable();
 
     super.dispose();
   }
@@ -291,7 +297,7 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
       future: _cameraControllerInitializeFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done) {
-          return Stack(
+          return ListView(
             children: [
               Align(
                 alignment: Alignment.topCenter,
@@ -312,6 +318,31 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
                   ),
                 ),
               ),
+              /*SizedBox(
+                height: 200,
+                child: AgoraVideoView(
+                  controller: VideoViewController(
+                    rtcEngine: _agoraEngine,
+                    canvas: VideoCanvas(uid: 0),
+                  ),
+                ),
+              ),
+              if (isRemoteJoined)
+                Positioned(
+                  right: 10,
+                  top: 10,
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    child: AgoraVideoView(
+                      controller: VideoViewController.remote(
+                        rtcEngine: _agoraEngine,
+                        canvas: VideoCanvas(uid: remoteUid),
+                        connection: RtcConnection(localUid: 0,channelId: "main-channel")
+                      ),
+                    ),
+                  ),
+                ),*/
               Padding(
                 padding: const EdgeInsets.only(bottom: 80),
                 child: Align(
@@ -321,7 +352,7 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
                         if (!isStreaming) {
                           isStreaming = true;
                           _cameraController?.initializeAgora(
-                              widget.appId, "", "", 0); //pass actual token, channel and uid here
+                              widget.appId, "007eJxTYNjOcvXN58URuQyTrrLoG9+onp950zCF71iXaD/v88QyuTMKDIYmlqaJpsnmpokGRiZpBqaJaalGloaJiQZJpqmppmkWfGdOpTcEMjJ4mD5mYWSAQBCfhyE3MTNPNzkjMS8vNYeBAQA9CiIb", "main-channel", 0); //pass actual token, channel and uid here
                         } else {
                           isStreaming = false;
                           _cameraController?.stopStream();

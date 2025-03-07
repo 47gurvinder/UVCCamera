@@ -13,6 +13,8 @@ dependencies:
   cross_file: ^0.3.4+2
   cupertino_icons: ^1.0.8
   permission_handler: ^11.3.1
+#  agora_rtc_engine: ^6.5.0
+  wakelock_plus: ^1.2.10
 
 dev_dependencies:
   integration_test:
