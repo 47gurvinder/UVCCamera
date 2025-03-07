@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:uvccamera/uvccamera.dart';
 
 import 'uvccamera_device_screen.dart';
@@ -19,13 +20,19 @@ class _UvcCameraDevicesScreenState extends State<UvcCameraDevicesScreen> {
   final Map<String, UvcCameraDevice> _devices = {};
   final TextEditingController appIdController = TextEditingController();
 
+  // List of permissions required
+  final List<Permission> _permissions = [
+    Permission.phone,
+    Permission.microphone,
+    Permission.camera,
+  ];
+
   @override
   void initState() {
     super.initState();
     if (kDebugMode) {
       appIdController.text = "1495a5c75a024f05afe291aa0b5ee5f8";
     }
-
 
     UvcCamera.isSupported().then((value) {
       setState(() {
@@ -151,10 +158,60 @@ class _UvcCameraDevicesScreenState extends State<UvcCameraDevicesScreen> {
       return;
     }
 
+    _requestPermissions(device);
+    /*Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => UvcCameraDeviceScreen(device: device, appId: appIdController.text),
+      ),
+    );*/
+  }
+
+  // Function to request permissions
+  Future<void> _requestPermissions(UvcCameraDevice device) async {
+    Map<Permission, PermissionStatus> statuses = await _permissions.request();
+
+    // Check if all permissions are granted
+    bool allGranted = statuses.values.every((status) => status.isGranted);
+
+    if (allGranted) {
+      _navigateToNextScreen(device);
+    } else {
+      _showDeniedPermissionsDialog(device);
+    }
+  }
+
+  void _navigateToNextScreen(UvcCameraDevice device) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => UvcCameraDeviceScreen(device: device, appId: appIdController.text),
+      ),
+    );
+  }
+
+  // Show alert if permissions are denied
+  void _showDeniedPermissionsDialog(UvcCameraDevice device) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Permissions Required"),
+        content: Text("All permissions must be granted to proceed."),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context); // Close dialog
+              await _requestPermissions(device); // Request permissions again
+            },
+            child: Text("Retry"),
+          ),
+          TextButton(
+            onPressed: () {
+              openAppSettings(); // Open settings if permissions are permanently denied
+            },
+            child: Text("Open Settings"),
+          ),
+        ],
       ),
     );
   }

@@ -496,7 +496,7 @@ import io.flutter.view.TextureRegistry;
                 @Override
                 public void onFrame(ByteBuffer frame) {
                     if (agoraEngine != null && canPushFrame) {
-                        Log.e("MyAppAgora","here");
+//                        Log.e("MyAppAgora","here");
 //                        pushFrameToAgora(frame.array(), camera.getPreviewSize().width, camera.getPreviewSize().height);
                         byte[] data = new byte[frame.remaining()];
                         frame.get(data);
@@ -1234,7 +1234,17 @@ import io.flutter.view.TextureRegistry;
                 public void onUserJoined(int uid, int elapsed) {
                     super.onUserJoined(uid, elapsed);
                     Log.e("MyAppAgora", "Agora onUserJoined: " + uid);
-                    onSetupAgora.setupRemoteView(uid);
+                   /* new Handler(Looper.getMainLooper()).post(() -> {
+                        boolean isRemoteVideoEnabled = AgoraManager.getInstance().getRtcEngine().isTextureEncodeSupported();
+                        Log.e("MyAppAgora", "Remote user video status: " + isRemoteVideoEnabled);
+
+                        if (isRemoteVideoEnabled) {
+                            onSetupAgora.setupRemoteView(uid);
+                        } else {
+                            Log.e("MyAppAgora", "Remote user is NOT sending video.");
+                        }
+                    });*/
+
 
                 }
 
@@ -1269,7 +1279,7 @@ import io.flutter.view.TextureRegistry;
         // Set the user role to BROADCASTER or AUDIENCE according to the use-case
         options.clientRoleType = Constants.CLIENT_ROLE_BROADCASTER;
         // In the live broadcast use-case, set the channelProfile to BROADCASTING (live broadcast use-case)
-        options.channelProfile = Constants.CHANNEL_PROFILE_LIVE_BROADCASTING;
+        options.channelProfile = Constants.CHANNEL_PROFILE_COMMUNICATION;
         // Set the latency level for audience
         options.audienceLatencyLevel = Constants.AUDIENCE_LATENCY_LEVEL_ULTRA_LOW_LATENCY;
         // Publish local media

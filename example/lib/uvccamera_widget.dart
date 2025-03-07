@@ -1,10 +1,14 @@
 import 'dart:async';
 
 import 'package:cross_file/cross_file.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:uvccamera/uvccamera.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:flutter/services.dart';
 
 class UvcCameraWidget extends StatefulWidget {
   final UvcCameraDevice device;
@@ -318,6 +322,13 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
                   ),
                 ),
               ),
+              Container(
+                  height: 200,
+                  margin: EdgeInsets.all(10),
+                  color: Colors.black,
+                  child:
+                      _buildAgoraRemoteView()
+                  ),
               /*SizedBox(
                 height: 200,
                 child: AgoraVideoView(
@@ -352,7 +363,10 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
                         if (!isStreaming) {
                           isStreaming = true;
                           _cameraController?.initializeAgora(
-                              widget.appId, "007eJxTYNjOcvXN58URuQyTrrLoG9+onp950zCF71iXaD/v88QyuTMKDIYmlqaJpsnmpokGRiZpBqaJaalGloaJiQZJpqmppmkWfGdOpTcEMjJ4mD5mYWSAQBCfhyE3MTNPNzkjMS8vNYeBAQA9CiIb", "main-channel", 0); //pass actual token, channel and uid here
+                              widget.appId,
+                              "007eJxTYNjOcvXN58URuQyTrrLoG9+onp950zCF71iXaD/v88QyuTMKDIYmlqaJpsnmpokGRiZpBqaJaalGloaJiQZJpqmppmkWfGdOpTcEMjJ4mD5mYWSAQBCfhyE3MTNPNzkjMS8vNYeBAQA9CiIb",
+                              "main-channel",
+                              0); //pass actual token, channel and uid here
                         } else {
                           isStreaming = false;
                           _cameraController?.stopStream();
@@ -371,6 +385,42 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
         } else {
           return const Center(child: CircularProgressIndicator());
         }
+      },
+    );
+  }
+
+  Widget _buildAgoraRemoteView() {
+    // This is used in the platform side to register the view
+    const String viewType = 'agora_remote_view';
+
+    // Pass parameters to the platform side
+    final Map<String, dynamic> creationParams = <String, dynamic>{
+
+    };
+
+    // Use PlatformViewLink for Hybrid Composition (preferred on Android)
+    return PlatformViewLink(
+      viewType: viewType,
+      surfaceFactory: (context, controller) {
+        return AndroidViewSurface(
+          controller: controller as AndroidViewController,
+          gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
+          hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+        );
+      },
+      onCreatePlatformView: (params) {
+        return PlatformViewsService.initSurfaceAndroidView(
+          id: params.id,
+          viewType: viewType,
+          layoutDirection: TextDirection.ltr,
+          creationParams: creationParams,
+          creationParamsCodec: const StandardMessageCodec(),
+          onFocus: () {
+            params.onFocusChanged(true);
+          },
+        )
+          ..addOnPlatformViewCreatedListener(params.onPlatformViewCreated)
+          ..create();
       },
     );
   }
